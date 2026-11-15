@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTB Challenge Writeup: VVM</title>
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --surface: #141b22;
+            --border: #1e2a36;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #9fef00;
+            --accent-dim: #6ab300;
+            --orange: #ff8c42;
+            --red: #f85149;
+            --blue: #58a6ff;
+            --purple: #bc8cff;
+            --code-bg: #1a1f29;
+            --inline-code: #e6b450;
+            --header-bg: #0d1117;
+            --table-row-alt: #111820;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ─── Header ─── */
+        .banner {
+            width: 100%;
+            max-height: 240px;
+            object-fit: cover;
+            display: block;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .header {
+            background: var(--header-bg);
+            padding: 36px 0 28px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .header-content img {
+            width: 62px;
+            height: auto;
+            flex-shrink: 0;
+        }
+
+        .challenge-title {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 32px;
+            margin-top: 14px;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .meta-row span { display: flex; align-items: center; gap: 6px; }
+        .meta-row .label { color: var(--text-secondary); opacity: 0.7; }
+        .category-badge {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .difficulty-badge {
+            background: #ff8c4222;
+            color: var(--orange);
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--orange);
+            font-size: 0.82rem;
+        }
+
+        /* ─── Sections ─── */
+        main { padding: 44px 0 60px; }
+
+        section { margin-bottom: 48px; }
+
+        h1 {
+            font-size: 1.85rem;
+            color: #fff;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            color: var(--accent);
+            margin: 28px 0 12px;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            color: #e6e6e6;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        p { margin-bottom: 14px; }
+
+        ul, ol {
+            margin: 8px 0 16px 24px;
+        }
+        li { margin-bottom: 6px; }
+        li::marker { color: var(--accent); }
+
+        /* ─── Code blocks ─── */
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px 20px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            margin: 16px 0;
+            color: #e6e6e6;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.88em;
+            background: var(--code-bg);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--inline-code);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #e6e6e6;
+        }
+
+        /* Syntax highlighting */
+        .kw { color: #ff7b72; }
+        .str { color: #a5d6ff; }
+        .num { color: #79c0ff; }
+        .cmt { color: #8b949e; font-style: italic; }
+        .fn { color: #d2a8ff; }
+        .op { color: #ff7b72; }
+
+        /* ─── Tables ─── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 0.9rem;
+        }
+        thead th {
+            background: var(--border);
+            color: #fff;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--accent);
+        }
+        tbody td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        tbody tr:nth-child(even) { background: var(--table-row-alt); }
+        tbody tr:hover { background: #1a2330; }
+
+        /* ─── Callouts ─── */
+        .callout {
+            border-left: 4px solid var(--accent);
+            background: #9fef0010;
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 18px 0;
+            font-size: 0.93rem;
+        }
+        .callout.warn {
+            border-left-color: var(--orange);
+            background: #ff8c4210;
+        }
+        .callout.info {
+            border-left-color: var(--blue);
+            background: #58a6ff10;
+        }
+        .callout strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        /* ─── Flag display ─── */
+        .flag-box {
+            background: #0d2818;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            padding: 20px 28px;
+            text-align: center;
+            margin: 24px 0;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1px;
+            word-break: break-all;
+        }
+
+        /* ─── Workflow steps ─── */
+        .step-list {
+            counter-reset: step;
+            list-style: none;
+            margin-left: 0;
+        }
+        .step-list li {
+            counter-increment: step;
+            position: relative;
+            padding-left: 48px;
+            margin-bottom: 18px;
+            min-height: 32px;
+        }
+        .step-list li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.88rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ─── Footer ─── */
+        footer {
+            border-top: 1px solid var(--border);
+            text-align: center;
+            padding: 28px 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        footer .generated {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .container { padding: 0 16px; }
+            .challenge-title { font-size: 1.7rem; }
+            pre { padding: 14px; font-size: 0.78rem; }
+            .meta-row { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Banner -->
+    <img class="banner" src="assets/banner.png" alt="HTB Challenge Banner">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <img src="assets/htb.png" alt="HTB Logo">
+                <div>
+                    <div class="challenge-title">VVM</div>
+                    <div class="meta-row">
+                        <span><span class="label">Category:</span> <span class="category-badge">Reverse Engineering</span></span>
+                        <span><span class="label">Difficulty:</span> <span class="difficulty-badge">Hard</span></span>
+                        <span><span class="label">Date:</span> 28<sup>th</sup> July 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="container">
+
+        <!-- ── Challenge Metadata ── -->
+        <section>
+            <div class="meta-row" style="margin-bottom: 8px;">
+                <span><span class="label">Prepared By:</span> <code>mytrexdude</code></span>
+                <span><span class="label">Challenge Author(s):</span> <code>HTB</code></span>
+            </div>
+            <div class="meta-row">
+                <span><span class="label">Binary:</span> <code>rev_vvm/vvm</code> &mdash; ELF 64-bit x86-64, stripped</span>
+                <span><span class="label">VM Version:</span> <code>vvm v0.0.3</code></span>
+            </div>
+        </section>
+
+        <!-- ── Synopsis ── -->
+        <section>
+            <h1>Synopsis</h1>
+
+            <p>
+                <strong>VVM</strong> is a hard reverse engineering challenge featuring a custom stack-based virtual machine
+                (<em>Very Virtual Machine v0.0.3</em>) that implements a password-checking bytecode program.
+                The binary employs anti-debugging via <code>ptrace</code>, encrypted code handlers, and a multi-level
+                bytecode interpreter with nested sub-bytecode dispatch loops.
+            </p>
+
+            <div class="callout info">
+                <strong>Goal</strong>
+                Reverse engineer the custom VM architecture, extract the 32-character flag by recovering
+                the expected packed comparison values, inverting the per-group ROTL transformation,
+                and descrambling the character permutation.
+            </div>
+
+            <p>The challenge requires:</p>
+            <ul>
+                <li>Patching the <code>ptrace</code> anti-debugging check</li>
+                <li>Dumping all 28 VM opcode handlers via GDB + QEMU-user</li>
+                <li>Decoding the bytecode program and sub-bytecodes</li>
+                <li>Recovering expected packed values and reversing the ROTL transformation</li>
+                <li>Descrambling the flag character permutation order</li>
+            </ul>
+        </section>
+
+        <!-- ── Description ── -->
+        <section>
+            <h1>Description</h1>
+
+            <p>
+                The downloadable archive contains a single directory <code>rev_vvm/</code> with an
+                x86-64 ELF binary named <code>vvm</code>. The binary is stripped and contains:
+            </p>
+
+            <ul>
+                <li><strong>Custom VM interpreter</strong> with 28 opcodes (0–27)</li>
+                <li><strong>24 encrypted code chunks</strong> (stored with <code>d9 04 3f db</code> magic header)</li>
+                <li><strong>Bytecode program</strong> at virtual address <code>0x5540</code></li>
+                <li><strong>Anti-debugging</strong> via <code>ptrace(PTRACE_TRACEME)</code></li>
+                <li><strong>Encrypted string / code handlers</strong> decrypted at runtime using a 6-byte XOR key</li>
+            </ul>
+
+            <table>
+                <thead>
+                    <tr><th>Property</th><th>Value</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>File Type</td><td>ELF 64-bit LSB PIE executable, x86-64, stripped</td></tr>
+                    <tr><td>Compiler</td><td>GCC 11.4.0 (Ubuntu 22.04)</td></tr>
+                    <tr><td>Key Functions</td><td><code>main</code> at 0x1180, VM init at 0x1530, VM exec at 0x2870</td></tr>
+                    <tr><td>Bytecode Location</td><td>VA 0x5540 (file offset 0x4540)</td></tr>
+                    <tr><td>VM State Pointer</td><td>VA 0x74e0 → heap-allocated (0xe0 bytes, 28 slots)</td></tr>
+                    <tr><td>Encryption Key</td><td>6-byte XOR key: <code>2a 0b 21 21 4d 2a</code></td></tr>
+                    <tr><td>Flag Length</td><td>32 characters</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ── Skills Required ── -->
+        <section>
+            <h1>Skills Required</h1>
+            <ul>
+                <li>Reverse engineering x86-64 binaries (Ghidra / radare2 / GDB)</li>
+                <li>Cross-architecture debugging with QEMU-user + GDB stub</li>
+                <li>Custom VM / bytecode analysis and emulation</li>
+                <li>Binary patching (NOP-ing anti-debugging checks)</li>
+                <li>Python scripting for bytecode extraction and emulation</li>
+                <li>Understanding of ROTL/ROTR bitwise transformations</li>
+            </ul>
+        </section>
+
+        <!-- ── Skills Learned ── -->
+        <section>
+            <h1>Skills Learned</h1>
+            <ul>
+                <li>Reverse engineering multi-level custom VM interpreters</li>
+                <li>Dumping decrypted JIT code handlers at runtime via GDB</li>
+                <li>Identifying opcode dispatch loops and reconstructing full ISA</li>
+                <li>Decrypting XOR-encrypted code chunks with modular arithmetic key indexing</li>
+                <li>Solving character-scrambled flag checks through ROTL/ROTR inversion</li>
+                <li>Patching bytecode COND_JMP instructions to control execution flow</li>
+            </ul>
+        </section>
+
+        <!-- ── Enumeration ── -->
+        <section>
+            <h1>Enumeration</h1>
+
+            <h2>Initial Analysis</h2>
+
+            <p>
+                Running <code>strings</code> and <code>readelf</code> on the binary reveals:
+            </p>
+
+            <pre><code><span class="cmt"># strings output</span>
+getline
+__printf_chk
+malloc
+ptrace
+puts
+free
+memcpy
+=======================
+vvm v0.0.3
+=======================</code></pre>
+
+            <p>
+                The presence of <code>ptrace</code> indicates anti-debugging. The <code>getline</code> /
+                <code>__printf_chk</code> pair suggests password-prompt functionality. The
+                <code>vvm v0.0.3</code> string identifies this as a custom VM.
+            </p>
+
+            <p>Running the binary immediately hits the ptrace check and exits with code 1:</p>
+
+            <pre><code><span class="cmt"># Before patching — always exits 1</span>
+$ echo "test" | ./vvm
+=======================
+vvm v0.0.3
+=======================
+<span class="cmt"># exit: 1</span></code></pre>
+
+            <h2>Bypassing Anti-Debugging</h2>
+
+            <p>
+                The <code>ptrace</code> call at <code>0x13f2</code> calls <code>PTRACE_TRACEME</code>.
+                The return value is tested at <code>0x13f7</code>: if negative (debugger attached), the
+                program calls <code>exit(1)</code>. Patching the <code>js</code> conditional to
+                <code>nop; nop</code> at file offset <code>0x13fa</code> bypasses the check:
+            </p>
+
+            <pre><code><span class="cmt"># Python: patch ptrace check</span>
+<span class="kw">with</span> open(<span class="str">'vvm'</span>, <span class="str">'r+b'</span>) <span class="kw">as</span> f:
+    f.seek(0x13fa)
+    f.write(bytes([0x90, 0x90]))  <span class="cmt"># js 0x1401 → nop; nop</span></code></pre>
+
+            <p>After patching, the binary reveals the full prompt:</p>
+
+            <pre><code>$ echo "test" | ./vvm_patched
+=======================
+vvm v0.0.3
+=======================
+<span class="str">What is the password:</span> Incorrect :(</code></pre>
+
+            <h2>VM Architecture Discovery</h2>
+
+            <p>
+                Using <code>x86_64-linux-gnu-objdump</code> to disassemble the binary reveals three
+                key functions called from <code>main</code>:
+            </p>
+
+            <ol class="step-list">
+                <li>
+                    <strong>Function 0x2910</strong> — Prints the banner (<code>=====\nvvm v0.0.3\n=====</code>)
+                </li>
+                <li>
+                    <strong>Function 0x1530</strong> — VM initialization: allocates the VM state
+                    (0xe0 bytes), decrypts 24 code chunks into executable memory via <code>mmap</code>,
+                    and populates the opcode handler table
+                </li>
+                <li>
+                    <strong>Function 0x2870</strong> — VM execution loop: reads 32-bit opcodes from
+                    bytecode at 0x5540, dispatches via <code>call [r8 + opcode*8]</code>, halts on opcode 28
+                </li>
+            </ol>
+
+            <div class="callout">
+                <strong>Key Discovery</strong>
+                The VM dispatch at <code>0x28d8</code> calls <code>[r8 + r9*8]</code> where
+                <code>r8</code> is the VM state base (stored at VA 0x74e0) and <code>r9</code>
+                is the opcode. Each handler is an 8-byte function pointer — 28 handlers total
+                (opcodes 0–27).
+            </div>
+        </section>
+
+        <!-- ── Solution ── -->
+        <section>
+            <h1>Solution</h1>
+
+            <h2>Dumping Opcode Handlers via GDB + QEMU</h2>
+
+            <p>
+                Since the system is ARM64 but the binary is x86-64, we use <code>qemu-x86_64</code>
+                with GDB stub (<code>-g PORT</code>) and connect with <code>gdb-multiarch</code>.
+                By breaking at the execution loop entry (<code>0x555555558870</code>), we can
+                read the VM state pointer and dump all 28 handler addresses:
+            </p>
+
+            <pre><code><span class="cmt"># GDB: dump handler table</span>
+set $vmstate_ptr = *(long long*)0x55555555d4e0
+set $i = 0
+<span class="kw">while</span> $i < 28
+  set $handler = *(long long*)($vmstate_ptr + $i * 8)
+  <span class="kw">if</span> $handler != 0
+    printf <span class="str">"opcode %2d: handler at %p\n"</span>, $i, $handler
+    x/30i $handler
+  <span class="kw">end</span>
+  set $i = $i + 1
+<span class="kw">end</span></code></pre>
+
+            <h2>Complete Opcode Mapping</h2>
+
+            <p>By disassembling each handler, we identify all 28 opcodes:</p>
+
+            <table>
+                <thead>
+                    <tr><th>Opcode</th><th>Mnemonic</th><th>Operands</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>0</td><td>STRLEN</td><td>—</td><td>Pop string ptr, push strlen</td></tr>
+                    <tr><td>1</td><td>SHL</td><td>—</td><td>Pop b, pop a; push a &lt;&lt; b</td></tr>
+                    <tr><td>2</td><td>MOD</td><td>—</td><td>Pop b, pop a; push a % b</td></tr>
+                    <tr><td>3</td><td>GETLINE</td><td>1 word (size)</td><td>Read input via getline(), push string ptr</td></tr>
+                    <tr><td>4</td><td>DIV</td><td>—</td><td>Pop b, pop a; push a / b</td></tr>
+                    <tr><td>5</td><td>ADD</td><td>—</td><td>Pop b, pop a; push a + b</td></tr>
+                    <tr><td>6</td><td>MUL</td><td>—</td><td>Pop b, pop a; push a * b</td></tr>
+                    <tr><td>7</td><td>NOP (ptrace)</td><td>—</td><td>Anti-debugging check</td></tr>
+                    <tr><td>8</td><td>OR</td><td>—</td><td>Pop b, pop a; push a | b</td></tr>
+                    <tr><td>9</td><td>MOD3</td><td>—</td><td>Pop a; push (a + 17) % 3</td></tr>
+                    <tr><td>10</td><td>PRINT</td><td>—</td><td>Pop and printf("%s", val)</td></tr>
+                    <tr><td>11</td><td>JMP</td><td>1 word (signed offset)</td><td>Relative forward jump</td></tr>
+                    <tr><td>12</td><td>MUL6</td><td>—</td><td>Pop a; push a * 6 - 12</td></tr>
+                    <tr><td>13</td><td>STRIP_NL</td><td>—</td><td>Strip trailing newline from string</td></tr>
+                    <tr><td>14</td><td>ZERO</td><td>—</td><td>Pop and push 0</td></tr>
+                    <tr><td>15</td><td>ARRAY</td><td>1 word (count)</td><td>Create array from count stack values</td></tr>
+                    <tr><td>16</td><td>PEEK</td><td>1 word (offset)</td><td>Push copy of stack[sp-1-offset]</td></tr>
+                    <tr><td>17</td><td>LOOP</td><td>2 words (count, target)</td><td><strong>Sub-bytecode call</strong> — jump to bytecode[count], execute until HALT, return</td></tr>
+                    <tr><td>18</td><td>GET_CHAR</td><td>1 word (index)</td><td>Pop string ptr; push string[index]</td></tr>
+                    <tr><td>19</td><td>EQ</td><td>—</td><td>Pop b, pop a; push (a == b)</td></tr>
+                    <tr><td>20</td><td>NEQ</td><td>—</td><td>Pop b, pop a; push (a != b)</td></tr>
+                    <tr><td>21</td><td>MUL8</td><td>—</td><td>Pop a; push a * 8 + 24</td></tr>
+                    <tr><td>22</td><td>COND_JMP</td><td>1 word (signed offset)</td><td>Pop cond; if non-zero, jump</td></tr>
+                    <tr><td>23</td><td>DUP</td><td>—</td><td>Duplicate top of stack</td></tr>
+                    <tr><td>24</td><td>SUB</td><td>—</td><td>Pop b, pop a; push a - b</td></tr>
+                    <tr><td>25</td><td>PUSH</td><td>1 word (immediate)</td><td>Push 32-bit immediate</td></tr>
+                    <tr><td>26</td><td>SHR</td><td>—</td><td>Pop b, pop a; push a &gt;&gt; b</td></tr>
+                    <tr><td>27</td><td>JMP_BACK</td><td>1 word (count)</td><td>Jump backward count words</td></tr>
+                    <tr><td>28</td><td>HALT</td><td>—</td><td>Stop VM execution</td></tr>
+                </tbody>
+            </table>
+
+            <h2>Understanding the Bytecode Program</h2>
+
+            <p>
+                The bytecode at 0x5540 implements three phases:
+            </p>
+
+            <h3>Phase 1: Prompt String Computation</h3>
+            <p>
+                The prompt <em>"What is the password: "</em> is <strong>not</strong> decrypted from
+                a string table — it is <strong>computed</strong> character-by-character using
+                arithmetic operations on PUSH'd immediate values:
+            </p>
+
+            <pre><code><span class="cmt"># Example: computing 'W' (87)</span>
+PUSH 174
+PUSH 2
+<span class="fn">DIV</span>          <span class="cmt"># 174/2 = 87 = 'W'</span>
+
+<span class="cmt"># Computing 'a' (97)</span>
+PUSH 52
+PUSH 2
+<span class="fn">MUL</span>          <span class="cmt"># 104</span>
+<span class="fn">DUP</span>
+PUSH 7
+<span class="fn">SUB</span>          <span class="cmt"># 104-7 = 97 = 'a'</span></code></pre>
+
+            <p>After computing all 22 prompt characters, the ARRAY opcode packs them for printing.</p>
+
+            <h3>Phase 2: Input Reading &amp; Length Check</h3>
+            <p>
+                GETLINE reads the password. STRLEN computes its length <code>N</code>,
+                which is transformed through: <code>(N×6 - 8) ÷ 2 × 8 + 24 ÷ 10</code>.
+                For N=32, this yields 76. The expected length-derived value is also 76,
+                confirming the flag is 32 characters.
+            </p>
+
+            <h3>Phase 3: Character Scrambling &amp; Group Packing</h3>
+            <p>
+                The 32 flag characters are read in <strong>scrambled order</strong> via 32
+                GET_CHAR operations, organized into 8 groups of 4:
+            </p>
+
+            <table>
+                <thead>
+                    <tr><th>Group</th><th>GET_CHAR Indices</th><th>Sub-282 Pack Order</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>0</td><td>24, 14, 27, 15</td><td>flag[24], flag[14], flag[27], flag[15]</td></tr>
+                    <tr><td>1</td><td>11, 7, 12, 4</td><td>flag[11], flag[7], flag[12], flag[4]</td></tr>
+                    <tr><td>2</td><td>6, 9, 2, 18</td><td>flag[6], flag[9], flag[2], flag[18]</td></tr>
+                    <tr><td>3</td><td>19, 13, 20, 26</td><td>flag[19], flag[13], flag[20], flag[26]</td></tr>
+                    <tr><td>4</td><td>28, 16, 23, 8</td><td>flag[28], flag[16], flag[23], flag[8]</td></tr>
+                    <tr><td>5</td><td>3, 30, 21, 22</td><td>flag[3], flag[30], flag[21], flag[22]</td></tr>
+                    <tr><td>6</td><td>25, 5, 10, 31</td><td>flag[25], flag[5], flag[10], flag[31]</td></tr>
+                    <tr><td>7</td><td>29, 1, 0, 17</td><td>flag[29], flag[1], flag[0], flag[17]</td></tr>
+                </tbody>
+            </table>
+
+            <p>
+                Each group is packed into a 32-bit integer by <strong>sub-bytecode 282</strong>:
+            </p>
+
+            <pre><code><span class="cmt"># Sub-bytecode 282: pack 4 stack values into uint32 LE</span>
+<span class="fn">PEEK</span> 3      <span class="cmt"># push stack[sp-4] → byte 0</span>
+<span class="fn">PEEK</span> 3      <span class="cmt"># push stack[sp-3] → byte 1</span>
+<span class="fn">PUSH</span> 8
+<span class="fn">SHL</span>         <span class="cmt"># byte 1 &lt;&lt; 8</span>
+<span class="fn">OR</span>          <span class="cmt"># byte 0 | (byte 1 &lt;&lt; 8)</span>
+<span class="fn">PEEK</span> 2      <span class="cmt"># push stack[sp-2] → byte 2</span>
+<span class="fn">PUSH</span> 16
+<span class="fn">SHL</span>         <span class="cmt"># byte 2 &lt;&lt; 16</span>
+<span class="fn">OR</span>
+<span class="fn">PEEK</span> 1      <span class="cmt"># push stack[sp-1] → byte 3</span>
+<span class="fn">PUSH</span> 24
+<span class="fn">SHL</span>         <span class="cmt"># byte 3 &lt;&lt; 24</span>
+<span class="fn">OR</span>          <span class="cmt"># packed = byte0 | (byte1&lt;&lt;8) | (byte2&lt;&lt;16) | (byte3&lt;&lt;24)</span>
+<span class="fn">HALT</span></code></pre>
+
+            <h2>The ROTL Transformation</h2>
+
+            <p>
+                Each packed group is transformed by <strong>sub-bytecode 456</strong> before comparison.
+                Analysis of sub-bytecode 456 reveals it computes:
+            </p>
+
+            <pre><code><span class="cmt"># Sub-bytecode 456: ROTL(packed, setup)</span>
+<span class="fn">PEEK</span> 1      <span class="cmt"># push setup value</span>
+<span class="fn">PEEK</span> 1      <span class="cmt"># push packed value</span>
+<span class="fn">SHL</span>         <span class="cmt"># packed &lt;&lt; setup</span>
+<span class="fn">PEEK</span> 2      <span class="cmt"># push packed again</span>
+<span class="fn">PUSH</span> 32
+<span class="fn">PEEK</span> 3      <span class="cmt"># push setup again</span>
+<span class="fn">SUB</span>         <span class="cmt"># 32 - setup</span>
+<span class="fn">SHR</span>         <span class="cmt"># packed &gt;&gt; (32 - setup)</span>
+<span class="fn">OR</span>          <span class="cmt"># result = ROTL(packed, setup)</span>
+<span class="fn">HALT</span></code></pre>
+
+            <p>Verified with all-'A' (0x41414141) input:</p>
+
+            <pre><code><span class="cmt"># Python verification</span>
+<span class="kw">def</span> <span class="fn">rotl32</span>(x, n):
+    <span class="kw">return</span> ((x &lt;&lt; n) | (x &gt;&gt; (32 - n))) & 0xFFFFFFFF
+
+<span class="kw">assert</span> rotl32(0x41414141, 15) == 0xA0A0A0A0  <span class="cmt"># ✓ matches gdb trace!</span></code></pre>
+
+            <p>
+                Each of the 8 groups has a unique <strong>setup value</strong> computed just before
+                its LOOP call:
+            </p>
+
+            <table>
+                <thead>
+                    <tr><th>Transform #</th><th>Setup Value</th><th>Computation</th><th>Group (GET_CHAR)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>0</td><td>15</td><td>8 + 7</td><td>Group 7: [29, 1, 0, 17]</td></tr>
+                    <tr><td>1</td><td>19</td><td>24 - 5</td><td>Group 6: [25, 5, 10, 31]</td></tr>
+                    <tr><td>2</td><td>7</td><td>4 + 3</td><td>Group 5: [3, 30, 21, 22]</td></tr>
+                    <tr><td>3</td><td>18</td><td>11 + 7</td><td>Group 4: [28, 16, 23, 8]</td></tr>
+                    <tr><td>4</td><td>12</td><td>24 / 2</td><td>Group 3: [19, 13, 20, 26]</td></tr>
+                    <tr><td>5</td><td>20</td><td>5 × 4</td><td>Group 2: [6, 9, 2, 18]</td></tr>
+                    <tr><td>6</td><td>14</td><td>17 - 3</td><td>Group 1: [11, 7, 12, 4]</td></tr>
+                    <tr><td>7</td><td>7</td><td>51 / 3 - 10</td><td>Group 0: [24, 14, 27, 15]</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout warn">
+                <strong>Critical Insight</strong>
+                The transformation order is <strong>REVERSE</strong> of the packing order.
+                The last-packed group (group 7) is transformed first (setup=15), while the
+                first-packed group (group 0) is transformed last (setup=7).
+            </div>
+        </section>
+
+        <!-- ── Exploitation ── -->
+        <section>
+            <h1>Exploitation &amp; Flag Recovery</h1>
+
+            <h2>Extracting Expected Values</h2>
+
+            <p>
+                The 8 expected packed+transformed values are PUSH'd in the bytecode at pc=555–592
+                and compared via SUB + COND_JMP:
+            </p>
+
+            <table>
+                <thead>
+                    <tr><th>Transform #</th><th>Expected (transformed)</th><th>Expected (packed = ROTR)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>0 (setup=15)</td><td><code>0x2A222224</code></td><td><code>0x30485447</code> → "GTH0"</td></tr>
+                    <tr><td>1 (setup=19)</td><td><code>0x8A720A61</code></td><td><code>0x7d4c314e</code> → "N1L}"</td></tr>
+                    <tr><td>2 (setup=7)</td><td><code>0xBA3C3C99</code></td><td><code>0x3374797b</code> → "{yt3"</td></tr>
+                    <tr><td>3 (setup=18)</td><td><code>0xDDDDB50D</code></td><td><code>0x7543776f</code> → "owCu"</td></tr>
+                    <tr><td>4 (setup=12)</td><td><code>0xF3474345</code></td><td><code>0x305f3444</code> → "D4_0"</td></tr>
+                    <tr><td>5 (setup=20)</td><td><code>0x47272423</code></td><td><code>0x72423472</code> → "r4Br"</td></tr>
+                    <tr><td>6 (setup=14)</td><td><code>0x1517DD9C</code></td><td><code>0x7670545f</code> → "_Tpv"</td></tr>
+                    <tr><td>7 (setup=7)</td><td><code>0xB639B429</code></td><td><code>0x536c7368</code> → "hslS"</td></tr>
+                </tbody>
+            </table>
+
+            <h2>Reversing the Transformation</h2>
+
+            <p>The solver computes <code>ROTR(expected, setup)</code> for each group, then maps bytes to flag positions:</p>
+
+            <pre><code><span class="kw">def</span> <span class="fn">rotr32</span>(x, n):
+    <span class="kw">return</span> ((x &gt;&gt; n) | (x &lt;&lt; (32 - n))) & 0xFFFFFFFF
+
+<span class="kw">def</span> <span class="fn">rotr32</span>(x, n):
+    <span class="kw">return</span> rotl32(x, 32 - n)
+
+expected  = [706975780, 2322852449, 3124542873, 3720205581,
+             4081337093, 1193747491, 353885596, 3057234985]
+setups    = [15, 19, 7, 18, 12, 20, 14, 7]
+
+<span class="cmt"># GET_CHAR groups (from bytecode)</span>
+groups    = [[24,14,27,15], [11,7,12,4], [6,9,2,18], [19,13,20,26],
+             [28,16,23,8], [3,30,21,22], [25,5,10,31], [29,1,0,17]]
+
+<span class="cmt"># Transformation order is REVERSE of packing order</span>
+setup_to_group = [7, 6, 5, 4, 3, 2, 1, 0]
+
+flag = [<span class="str">'?'</span>] * 32
+<span class="kw">for</span> si, gi <span class="kw">in</span> enumerate(setup_to_group):
+    packed = rotr32(expected[si], setups[si])
+    <span class="kw">for</span> byte_i, flag_pos <span class="kw">in</span> enumerate(groups[gi]):
+        flag[flag_pos] = chr((packed &gt;&gt; (byte_i * 8)) & 0xFF)
+
+<span class="fn">print</span>(<span class="str">''</span>.join(flag))</code></pre>
+
+            <h2>Verifying the Flag</h2>
+
+            <pre><code>$ echo <span class="str">"HTB{v1rTu4L_p4sSw0rD_t3ChN0loGy}"</span> | ./vvm_patched
+=======================
+vvm v0.0.3
+=======================
+What is the password: <span class="str">Correct!</span></code></pre>
+
+        </section>
+
+        <!-- ── Flag ── -->
+        <section>
+            <h1>Flag</h1>
+            <div class="flag-box">HTB&#123;v1rTu4L_p4sSw0rD_t3ChN0loGy&#125;</div>
+
+            <div class="callout">
+                <strong>Flag Breakdown</strong>
+                <em>"HTB virtual password technology"</em> in leet-speak:
+                <code>v1rTu4L</code> = Virtual,
+                <code>p4sSw0rD</code> = Password,
+                <code>t3ChN0loGy</code> = Technology
+            </div>
+        </section>
+
+        <!-- ── Solver Script ── -->
+        <section>
+            <h1>Full Solver Script</h1>
+
+            <pre><code><span class="cmt">#!/usr/bin/env python3</span>
+<span class="cmt">"""VVM Flag Solver — HTB Reverse Engineering Challenge"""</span>
+<span class="kw">import</span> struct
+
+<span class="kw">def</span> <span class="fn">rotl32</span>(x, n):
+    <span class="kw">return</span> ((x &lt;&lt; (n & 0x1F)) | (x &gt;&gt; (32 - (n & 0x1F)))) & 0xFFFFFFFF
+
+<span class="kw">def</span> <span class="fn">rotr32</span>(x, n):
+    <span class="kw">return</span> rotl32(x, 32 - (n & 0x1F))
+
+<span class="cmt"># Expected transformed values from bytecode PUSHes at pc=555-592</span>
+expected = [
+    706975780,   <span class="cmt"># 0x2A222224</span>
+    2322852449,  <span class="cmt"># 0x8A720A61</span>
+    3124542873,  <span class="cmt"># 0xBA3C3C99</span>
+    3720205581,  <span class="cmt"># 0xDDDDB50D</span>
+    4081337093,  <span class="cmt"># 0xF3474345</span>
+    1193747491,  <span class="cmt"># 0x47272423</span>
+    353885596,   <span class="cmt"># 0x1517DD9C</span>
+    3057234985,  <span class="cmt"># 0xB639B429</span>
+]
+
+<span class="cmt"># Setup values (ROTL rotation amounts)</span>
+setups = [15, 19, 7, 18, 12, 20, 14, 7]
+
+<span class="cmt"># GET_CHAR position groups</span>
+groups = [
+    [24, 14, 27, 15], [11, 7, 12, 4],
+    [6, 9, 2, 18], [19, 13, 20, 26],
+    [28, 16, 23, 8], [3, 30, 21, 22],
+    [25, 5, 10, 31], [29, 1, 0, 17],
+]
+
+<span class="cmt"># Map transform order → group (reversed!)</span>
+setup_to_group = [7, 6, 5, 4, 3, 2, 1, 0]
+
+flag = [<span class="str">'?'</span>] * 32
+<span class="kw">for</span> si, gi <span class="kw">in</span> enumerate(setup_to_group):
+    packed = rotr32(expected[si], setups[si])
+    <span class="kw">for</span> byte_i, flag_pos <span class="kw">in</span> enumerate(groups[gi]):
+        flag[flag_pos] = chr((packed &gt;&gt; (byte_i * 8)) & 0xFF)
+
+<span class="fn">print</span>(<span class="str">''</span>.join(flag))
+<span class="cmt"># Output: HTB{v1rTu4L_p4sSw0rD_t3ChN0loGy}</span></code></pre>
+        </section>
+
+        <!-- ── Attack Flow ── -->
+        <section>
+            <h1>Attack Flow Summary</h1>
+
+            <ol class="step-list">
+                <li>
+                    <strong>Patch anti-debugging</strong> — NOP the <code>js</code> after
+                    <code>ptrace</code> at file offset <code>0x13fa</code>
+                </li>
+                <li>
+                    <strong>Disassemble the binary</strong> — Use <code>x86_64-linux-gnu-objdump</code>
+                    to identify main, VM init, and VM exec loop
+                </li>
+                <li>
+                    <strong>Dump handler table</strong> — Use GDB + QEMU-user to capture all 28
+                    opcode handler function pointers and disassemble each one
+                </li>
+                <li>
+                    <strong>Identify all opcodes</strong> — Analyze each handler to build the
+                    complete VM ISA (ADD, SUB, MUL, DIV, PUSH, PEEK, LOOP, EQ, COND_JMP, etc.)
+                </li>
+                <li>
+                    <strong>Trace bytecode execution</strong> — Emulate the bytecode program to
+                    understand prompt computation, length check, and flag validation flow
+                </li>
+                <li>
+                    <strong>Analyze sub-bytecodes</strong> — Decode sub-282 (packing) and
+                    sub-456 (ROTL transformation) called via the LOOP construct
+                </li>
+                <li>
+                    <strong>Extract expected values</strong> — Read the 8 PUSH constants at
+                    bytecode pc=555-592 and the 8 setup values (15, 19, 7, 18, 12, 20, 14, 7)
+                </li>
+                <li>
+                    <strong>Reverse ROTL</strong> — Compute <code>ROTR(expected, setup)</code>
+                    to recover the packed flag bytes for each group
+                </li>
+                <li>
+                    <strong>Descramble positions</strong> — Map packed bytes to flag positions
+                    using GET_CHAR indices, accounting for the reverse processing order
+                </li>
+                <li>
+                    <strong>Recover flag</strong> — Assemble the 32-character flag and verify
+                    against the original binary
+                </li>
+            </ol>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            Report generated on <span class="generated">28 July 2026</span> &middot;
+            Challenge: <strong>VVM</strong> (rev_vvm) &middot;
+            Category: Reverse Engineering &middot;
+            Platform: HackTheBox
+        </div>
+    </footer>
+
+</body>
+</html>
